@@ -162,3 +162,66 @@ int main() {
 
     std::cout << "\n✓ Lesson 03 complete.\n";
 }
+
+/**
+Here's a detailed explanation of the key syntax patterns, including lines 21, 45, and 76:
+
+Line 21 — Member initializer list + std::move
+cpp
+
+explicit Animal(std::string n) : name(std::move(n)) {
+Three things here:
+
+explicit — prevents the compiler from using this constructor for implicit conversions. Without it, Animal a = "Rex" would silently compile. With it, you must write Animal a("Rex") or Animal a{"Rex"}.
+
+: name(std::move(n)) — this is a member initializer list. Instead of assigning inside the constructor body, it directly constructs the member. More efficient because it avoids a default-construct-then-assign.
+
+std::move(n) — casts n to an rvalue reference, transferring ownership of the string's heap buffer into name rather than copying it. After the move, n is in a valid-but-empty state. Zero heap allocation cost.
+
+Line 45 — Lambda as a factory function
+cpp
+
+auto make_animal = [](std::string n) -> std::unique_ptr<Animal> {
+    return std::make_unique<Animal>(std::move(n));
+};
+[](...) lambda — an anonymous function defined inline. The [] is the capture list — empty here, so it captures nothing from the surrounding scope.
+
+-> std::unique_ptr<Animal> — explicit trailing return type. Not strictly required here (the compiler could deduce it), but makes the intent clear.
+
+std::make_unique<Animal>(...) — preferred over new Animal(...). Allocates and constructs in one shot, exception-safe. Returns a unique_ptr that owns the object.
+
+std::move(n) — same as line 21: moves the string into the constructor instead of copying.
+
+Line 76 — auto + lambda capture by value + shared_ptr by value
+cpp
+
+auto consume = [](std::shared_ptr<Animal> sp) {
+    std::cout << "  inside consume, use_count=" << sp.use_count() << "\n";
+};
+consume(sp1);   // count temporarily 2 during call
+[](std::shared_ptr<Animal> sp) — the lambda takes sp by value. Passing a shared_ptr by value copies it, which increments the reference count. That's why use_count is 2 inside the lambda and drops back to 1 after the call returns.
+
+Compare the alternatives:
+
+cpp
+
+[](std::shared_ptr<Animal>& sp)        // by reference — count stays 1, no ownership transfer
+[](const std::shared_ptr<Animal>& sp)  // by const ref — same, preferred for "just observe"
+[](std::shared_ptr<Animal> sp)         // by value — count +1, temporary co-ownership
+Other notable syntax in the file
+Line 94 — std::weak_ptr::lock()
+
+cpp
+
+if (auto locked = n2->prev.lock()) {
+lock() tries to promote the weak_ptr to a shared_ptr. If the object is still alive it returns a valid shared_ptr (count bumps by 1 for the duration). If already destroyed, returns nullptr. The if (auto locked = ...) pattern — called init-statement in if (C++17) — scopes locked to the if block only.
+
+Line 130 — decltype with custom deleter
+
+cpp
+
+std::unique_ptr<FILE, decltype(file_deleter)>
+    fp(fopen("CMakeLists.txt", "r"), file_deleter);
+unique_ptr's second template parameter is the deleter type. Since lambdas have unique unnamed types, decltype(file_deleter) lets the compiler deduce that type automatically. When fp goes out of scope, it calls file_deleter(raw_ptr) instead of delete.
+
+*/

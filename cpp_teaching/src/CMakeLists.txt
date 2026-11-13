@@ -1,4 +1,5 @@
 set(LESSONS
+    00_cpp17_syntax_guide
     01_stack_vs_heap
     02_pointers_and_references
     03_smart_pointers
