@@ -1,0 +1,8 @@
+{
+    "cmake.sourceDirectory": "E:/ws-c++/cpp_teaching",
+    "cmake.autoDetectSourceDirectory": false,
+    "cmake.environment": {
+        "CC": "E:/Installation/CTools/cygwin64/bin/gcc.exe",
+        "CXX": "E:/Installation/CTools/cygwin64/bin/g++.exe"
+    }
+}
